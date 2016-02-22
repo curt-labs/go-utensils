@@ -15,7 +15,7 @@ type Message struct {
 	Icon     string `json:"icon_emoji,omitempty"`
 }
 
-func (m *Message) Send(slackApi string, token string) error {
+func (m *Message) Send(slackApi string) error {
 	if len(m.Channel) == 0 {
 		return errors.New("Must specify a slack channel!")
 	}
@@ -35,7 +35,6 @@ func (m *Message) Send(slackApi string, token string) error {
 	}
 
 	resp, err := http.PostForm(slackApi, url.Values{
-		"token":   {token},
 		"payload": {string(js)},
 	})
 	if err != nil {
