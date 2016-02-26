@@ -2,7 +2,6 @@ package database
 
 import (
 	"database/sql"
-	"flag"
 	"fmt"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -15,17 +14,21 @@ type Scanner interface {
 }
 
 var (
-	EmptyDb = flag.String("cleaner", "", "bind empty database with structure defined")
 	DB      *sql.DB
+	AdminDB *sql.DB
 	VcdbDB  *sql.DB
 	Driver  = "mysql"
 )
 
+// InitDB Initiates a conenction to the CurtData database
 func InitDB() (*sql.DB, error) {
 	var err error
-	var DB *sql.DB
 	if DB == nil {
-		DB, err = sql.Open(Driver, ConnectionString())
+		db := "CurtData"
+		if d := os.Getenv("CURT_DEV_NAME"); d != "" {
+			db = d
+		}
+		DB, err = sql.Open(Driver, ConnectionString(db, false))
 		if err != nil {
 			return nil, err
 		}
@@ -33,11 +36,15 @@ func InitDB() (*sql.DB, error) {
 	return DB, nil
 }
 
+// InitVCDB Initiates a conenction to the VCDB database
 func InitVCDB() (*sql.DB, error) {
 	var err error
-	var VcdbDB *sql.DB
 	if VcdbDB == nil {
-		VcdbDB, err = sql.Open(Driver, VcdbConnectionString())
+		db := "vcdb"
+		if d := os.Getenv("VCDB_NAME"); d != "" {
+			db = d
+		}
+		VcdbDB, err = sql.Open(Driver, ConnectionString(db, true))
 		if err != nil {
 			return nil, err
 		}
@@ -45,30 +52,31 @@ func InitVCDB() (*sql.DB, error) {
 	return VcdbDB, nil
 }
 
-func ConnectionString() string {
+// InitAdmin Initiates a conenction to the admin database
+func InitAdmin() (*sql.DB, error) {
+	var err error
+	if AdminDB == nil {
+		db := "admin"
+		if d := os.Getenv("ADMIN_NAME"); d != "" {
+			db = d
+		}
+		AdminDB, err = sql.Open(Driver, ConnectionString(db, true))
+		if err != nil {
+			return nil, err
+		}
+	}
+	return AdminDB, nil
+}
+
+// ConnectionString Generates a MySQL connection string
+func ConnectionString(db string, parseTime bool) string {
 	if addr := os.Getenv("DATABASE_HOST"); addr != "" {
 		proto := os.Getenv("DATABASE_PROTOCOL")
 		user := os.Getenv("DATABASE_USERNAME")
 		pass := os.Getenv("DATABASE_PASSWORD")
-		db := os.Getenv("CURT_DEV_NAME")
 
 		return fmt.Sprintf("%s:%s@%s(%s)/%s?loc=%s", user, pass, proto, addr, db, "America%2FChicago")
 	}
 
-	if EmptyDb != nil && *EmptyDb != "" {
-		return "root:@tcp(127.0.0.1:3306)/CurtData_Empty?&loc=America%2FChicago"
-	}
-	return "root:@tcp(127.0.0.1:3306)/CurtData?loc=America%2FChicago"
-}
-
-func VcdbConnectionString() string {
-	if addr := os.Getenv("DATABASE_HOST"); addr != "" {
-		proto := os.Getenv("DATABASE_PROTOCOL")
-		user := os.Getenv("DATABASE_USERNAME")
-		pass := os.Getenv("DATABASE_PASSWORD")
-		db := os.Getenv("VCDB_NAME")
-		return fmt.Sprintf("%s:%s@%s(%s)/%s?parseTime=true&loc=%s", user, pass, proto, addr, db, "America%2FChicago")
-	}
-
-	return "root:@tcp(127.0.0.1:3306)/vcdb?parseTime=true&loc=America%2FChicago"
+	return fmt.Sprintf("root:@tcp(127.0.0.1:3306)/%s?parseTime=%t&loc=America%%2FChicago", db, parseTime)
 }
