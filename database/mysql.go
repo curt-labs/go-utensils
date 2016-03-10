@@ -55,17 +55,20 @@ func InitVCDB() (*sql.DB, error) {
 // InitAdmin Initiates a conenction to the admin database
 func InitAdmin() (*sql.DB, error) {
 	var err error
-	if AdminDB == nil {
-		db := "admin"
-		if d := os.Getenv("ADMIN_NAME"); d != "" {
-			db = d
-		}
-		AdminDB, err = sql.Open(Driver, ConnectionString(db, true))
-		if err != nil {
-			return nil, err
+	if AdminDB != nil {
+		err = AdminDB.Ping()
+		if err == nil {
+			return AdminDB, nil
 		}
 	}
-	return AdminDB, nil
+
+	db := "admin"
+	if d := os.Getenv("ADMIN_NAME"); d != "" {
+		db = d
+	}
+	AdminDB, err = sql.Open(Driver, ConnectionString(db, true))
+
+	return AdminDB, err
 }
 
 // ConnectionString Generates a MySQL connection string
