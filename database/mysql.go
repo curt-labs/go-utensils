@@ -16,6 +16,7 @@ type Scanner interface {
 var (
 	DB      *sql.DB
 	AdminDB *sql.DB
+	B2BDB   *sql.DB
 	VcdbDB  *sql.DB
 	Driver  = "mysql"
 )
@@ -69,6 +70,25 @@ func InitAdmin() (*sql.DB, error) {
 	AdminDB, err = sql.Open(Driver, ConnectionString(db, true))
 
 	return AdminDB, err
+}
+
+// InitB2B Initiates a conenction to the mysql version of the old b2b database
+func InitB2B() (*sql.DB, error) {
+	var err error
+	if B2BDB != nil {
+		err = B2BDB.Ping()
+		if err == nil {
+			return B2BDB, nil
+		}
+	}
+
+	db := "b2b"
+	if d := os.Getenv("B2B_NAME"); d != "" {
+		db = d
+	}
+	B2BDB, err = sql.Open(Driver, ConnectionString(db, true))
+
+	return B2BDB, err
 }
 
 // ConnectionString Generates a MySQL connection string
